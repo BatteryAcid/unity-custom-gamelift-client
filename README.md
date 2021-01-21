@@ -1,6 +1,6 @@
 ## AWS SDK for Unity to Connect to Custom GameLift Server
 
-This Unity project domonstrates a base project with the AWS SDK for Client Services installed.  The SDK is used to connect to custom GameLift servers.  
+This Unity project domonstrates a base project with the AWS SDK for Client Services installed.  The SDK enables your project to connect to custom GameLift servers. No connection or example code is in this repository, just the SDK setup. 
 
 ## Tutorial Video  
 
@@ -15,4 +15,3 @@ This Unity project domonstrates a base project with the AWS SDK for Client Servi
 * Articles: 
    * https://aws.amazon.com/blogs/gametech/how-to-integrate-the-aws-net-sdk-for-games-using-csharp/
    * https://aws.amazon.com/blogs/developer/referencing-the-aws-sdk-for-net-standard-2-0-from-unity-xamarin-or-uwp/
-   * 
