@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using System.Text;
 using Newtonsoft.Json;
+using UnityEngine.UI;
 
 // Handles the connection to the server to send and receive messages
 public class BADNetworkClient : MonoBehaviour
@@ -9,21 +10,35 @@ public class BADNetworkClient : MonoBehaviour
    private static int MaxMessageSize = 1024;
    private Telepathy.Client _client = new Telepathy.Client(MaxMessageSize);
    private string _playerSessionId;
+   public Text _statusText;
 
    private void ProcessMessage(BADNetworkMessage networkMessage)
    {
       if (networkMessage._opCode == "CONNECTED")
       {
          Debug.Log("Connection to server confirmed.");
+         Startup.GameStatus = "CONNECTED";
       }
       else if (networkMessage._opCode == "START")
       {
          Debug.Log("Game has started.");
+         Startup.GameStatus = "STARTED";
+      }
+      else if (networkMessage._opCode == "WIN")
+      {
+         Debug.Log("Winner");
+         GameEnded("GAME OVER - WINNER");
+      }
+      else if (networkMessage._opCode == "LOSE")
+      {
+         Debug.Log("Loser");
+         GameEnded("GAME OVER - YOU LOST");
       }
       else
       {
          Debug.LogWarning("Unknown message type received.");
       }
+      _statusText.text = Startup.GameStatus;
    }
 
    private void OnDataReceived(ArraySegment<byte> message)
@@ -35,6 +50,12 @@ public class BADNetworkClient : MonoBehaviour
       BADNetworkMessage networkMessage = JsonConvert.DeserializeObject<BADNetworkMessage>(convertedMessage);
 
       ProcessMessage(networkMessage);
+   }
+
+   public void WPressed()
+   {
+      BADNetworkMessage networkMessage = new BADNetworkMessage("W", _playerSessionId);
+      Send(networkMessage);
    }
 
    private void OnConnected()
@@ -60,6 +81,12 @@ public class BADNetworkClient : MonoBehaviour
    private void OnDisconnected()
    {
       Debug.Log("Client Disconnected");
+      GameEnded("GAME OVER - Player Disconnected");
+   }
+
+   private void GameEnded(string gameOverMessage)
+   {
+      Startup.GameStatus = gameOverMessage;
    }
 
    void Awake()
