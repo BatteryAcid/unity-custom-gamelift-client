@@ -5,11 +5,12 @@ This Unity project represents the complete client setup to communicate with a Un
 ## Tutorial Video  
 
 * Part 1: https://youtu.be/rUAhtlD-wXg  
-    *  https://github.com/BatteryAcid/unity-custom-gamelift-client/tree/add-awssdk-gl-client
+    *  Support repo: https://github.com/BatteryAcid/unity-custom-gamelift-client/tree/add-awssdk-gl-client
 * Part 2: https://youtu.be/IL2BRxJZdUA
-    *  https://github.com/BatteryAcid/unity-custom-gamelift-server/tree/custom-gamelift-server
+    *  Support repo: https://github.com/BatteryAcid/unity-custom-gamelift-server/tree/init-custom-unity-gamelift-server
 * Part 3: https://youtu.be/cOS4Ax85elQ
-    * Support repo: https://github.com/BatteryAcid/unity-custom-gamelift-client/tree/connect-custom-gamelift 
+    * client: https://github.com/BatteryAcid/unity-custom-gamelift-client/tree/connect-custom-gamelift  
+    * server: https://github.com/BatteryAcid/unity-custom-gamelift-server/tree/custom-gamelift-server
 
 ## References  
 
