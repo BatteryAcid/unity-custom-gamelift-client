@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using UnityEngine;
 using Amazon;
 using Amazon.GameLift;
@@ -73,6 +74,7 @@ public class GameLiftClient
       return createGameSessionResponse.GameSession;
    }
 
+   // Start here to find open single player game sessions to join
    async private Task<GameSession> SearchGameSessionsAsync()
    {
       Debug.Log("SearchGameSessions");
@@ -97,6 +99,116 @@ public class GameLiftClient
       return null;
    }
 
+   //TODO: we need to query for all the available queues, that way we're not hardcoding anything in our code.
+   // So the client will query for queues, with some filter on tag or name or something to make sure we're not getting one that's "disabled".
+   // Then we pass the queue to StartGameSessionPlacement
+   //
+
+   // NEW for queue research
+   // async private Task<string> SearchQueuesAsync()
+   // {
+   //    List<string> queueNames = new List<string> { "29OCT2021-queue" };
+
+   //    DescribeGameSessionQueuesRequest describeGameSessionQueuesRequest = new DescribeGameSessionQueuesRequest();
+   //    describeGameSessionQueuesRequest.Names = queueNames;
+
+   //    Task<DescribeGameSessionQueuesResponse> describeGameSessionQueuesResponseTask = _amazonGameLiftClient.DescribeGameSessionQueuesAsync(describeGameSessionQueuesRequest);
+   //    DescribeGameSessionQueuesResponse describeGameSessionQueuesResponse = await describeGameSessionQueuesResponseTask;
+
+   //    GameSessionQueue gameSessionQueue = describeGameSessionQueuesResponse.GameSessionQueues[0];
+   //    if (gameSessionQueue != null && gameSessionQueue.Destinations.Count > 0)
+   //    {
+   //       Debug.Log("Found destinations, ARN: " + gameSessionQueue.Destinations[0].DestinationArn);
+
+
+   //    }
+   //    else
+   //    {
+   //       Debug.Log("Game session queue was null or no destinations returned");
+   //    }
+   //    //.Destinations[0]
+
+   //    return null;
+   // }
+
+   // NEW for queue research
+   // async private Task<GameSession> SearchGameSessionsAsync(string alias)
+   // {
+
+   //    return null;
+   // }
+
+   // New for queue research
+   async private Task<GameSessionPlacement> SearchGameSessionPlacementAsync(string queueName, string placementId)
+   {
+      StartGameSessionPlacementRequest startGameSessionPlacementRequest = new StartGameSessionPlacementRequest();
+      startGameSessionPlacementRequest.PlacementId = placementId;
+      startGameSessionPlacementRequest.GameSessionQueueName = queueName;
+      startGameSessionPlacementRequest.MaximumPlayerSessionCount = 8;
+
+      // desired sessions for ONE player
+      // player id is required here to get the player session id on the other end
+      startGameSessionPlacementRequest.DesiredPlayerSessions = new List<DesiredPlayerSession> { new DesiredPlayerSession { PlayerId = _playerUuid } };
+
+      // NOTE: according to the docs this is how you can place multiple players into a game session: https://docs.aws.amazon.com/gamelift/latest/apireference/API_StartGameSessionPlacement.html
+      // This actually creates player sessions
+      Task<StartGameSessionPlacementResponse> startGameSessionPlacementResponseTask = _amazonGameLiftClient.StartGameSessionPlacementAsync(startGameSessionPlacementRequest);
+      StartGameSessionPlacementResponse startGameSessionPlacementResponse = await startGameSessionPlacementResponseTask;
+      Debug.Log(startGameSessionPlacementResponse.GameSessionPlacement.Status);
+
+      Debug.Log(startGameSessionPlacementResponse.HttpStatusCode);
+      return startGameSessionPlacementResponse.GameSessionPlacement;
+   }
+
+   // New for queue research, for single player joining. Will probably have to have different route for group joins
+   async private void FindMatch()
+   {
+      GameSession gameSession = IsArgFlagPresent(IsProdArg) ? await SearchGameSessionsAsync() : null;
+
+      if (gameSession == null)
+      {
+         Debug.Log("No Game sessions found.");
+         string placementId = Guid.NewGuid().ToString();
+
+         // TODO: pull this queue from a Queue Describe query
+         GameSessionPlacement gameSessionPlacement = await SearchGameSessionPlacementAsync("29OCT2021-queue", placementId);
+
+         // TODO: ONLY FOR LOCAL TESTING, DONT DO THIS, we need to setup SNS topic or something for production deployments
+         // source: https://docs.aws.amazon.com/gamelift/latest/apireference/API_DescribeGameSessionPlacement.html
+         // TODO: wrap this in editor only defines
+         // or maybe a back off strategy? 
+         string placementStatus = "";
+         while (placementStatus != "FULFILLED")
+         {
+            gameSessionPlacement = CheckPlayerSessionPlacementStatus(placementId);
+            placementStatus = gameSessionPlacement.Status;
+            Debug.Log(placementStatus);
+         }
+
+         Debug.Log($"CLIENT CONNECT INFO: {gameSessionPlacement.IpAddress}, {gameSessionPlacement.Port}, {gameSessionPlacement.PlacedPlayerSessions[0].PlayerSessionId} ");
+
+         // establish connection with server
+         _badNetworkClient.ConnectToServer(gameSessionPlacement.IpAddress, gameSessionPlacement.Port, gameSessionPlacement.PlacedPlayerSessions[0].PlayerSessionId);
+      }
+      else
+      {
+         Debug.Log("Game session found.");
+
+         // game session found, create player session and connect to server
+         CreatePlayerSession(gameSession);
+      }
+   }
+
+   private GameSessionPlacement CheckPlayerSessionPlacementStatus(string placementId)
+   {
+      DescribeGameSessionPlacementRequest describeQueuePlacementStatusRequest = new DescribeGameSessionPlacementRequest();
+      describeQueuePlacementStatusRequest.PlacementId = placementId;
+
+      DescribeGameSessionPlacementResponse describeQueuePlacementStatusResponse = _amazonGameLiftClient.DescribeGameSessionPlacementAsync(describeQueuePlacementStatusRequest).Result;
+      return describeQueuePlacementStatusResponse.GameSessionPlacement;
+   }
+
+
    async private void setup()
    {
       Debug.Log("setup");
@@ -105,6 +217,13 @@ public class GameLiftClient
 
       CreateGameLiftClient();
 
+      FindMatch();
+      // FindMatchOriginal();
+   }
+
+   // This was my original function
+   async private void FindMatchOriginal()
+   {
       // Mock game session queries aren't implemented for local GameLift server testing, so just return null to create new one
       GameSession gameSession = IsArgFlagPresent(IsProdArg) ? await SearchGameSessionsAsync() : null;
 
