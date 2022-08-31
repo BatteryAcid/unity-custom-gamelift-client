@@ -11,6 +11,10 @@ This Unity project represents the complete client setup to communicate with a Un
 * Part 3: https://youtu.be/cOS4Ax85elQ
     * client: https://github.com/BatteryAcid/unity-custom-gamelift-client/tree/connect-custom-gamelift  
     * server: https://github.com/BatteryAcid/unity-custom-gamelift-server/tree/custom-gamelift-server
+    
+## 👋 Let's talk shop 👇  
+[Discord] https://discord.gg/psjbBDvNBK  
+[Twitter] https://twitter.com/BatteryAcidDev
 
 ## References  
 
